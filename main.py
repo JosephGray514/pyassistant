@@ -3,17 +3,39 @@ import requests
 import json
 from dotenv import load_dotenv
 import os
+from langchain.document_loaders import DirectoryLoader, TextLoader
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.vectorstores.chroma import Chroma
+from langchain.chains import RetrievalQA
+from langchain.llms.openai import OpenAI
 
 app = Flask(__name__)
 load_dotenv('.env')
 
+def loadText():
+    embeddings = OpenAIEmbeddings()
+    # loader = TextLoader('news/Texto.txt')
+    loader = DirectoryLoader('news', glob="**/*.txt")
+    documents = loader.load()
+
+    text_splitter = CharacterTextSplitter(chunk_size=2500, chunk_overlap=0)
+    texts = text_splitter.split_documents(documents)
+    # print(texts)  
+
+    vecstore = Chroma.from_documents(texts,embeddings)
+    qa = RetrievalQA.from_chain_type(
+        llm = OpenAI(),
+        chain_type="stuff",
+        retriever = vecstore.as_retriever()
+    )
+    return qa
+
+qa = loadText()
+
 @app.route("/")
 def home():
-    return "Main"
-
-@app.route("/helloWorld", methods=["GET"])
-def helloWorld():
-    return "Hello World"
+    return 'home'
 
 @app.route("/webhook", methods=["GET"])
 def webhookGET():
@@ -50,8 +72,10 @@ def webhookPOST():
 
 def handleMessage(senderPsid, receivedMessage):
     if 'text' in receivedMessage:
+        text = receivedMessage['text']
+        res = qa.run(text)
         response = {
-            "text": 'You just send me {}'.format(receivedMessage['text'])
+            "text": res
         }
         callSendAPI(senderPsid,response)
     else:
