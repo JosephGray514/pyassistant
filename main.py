@@ -3,12 +3,12 @@ import requests
 import json
 from dotenv import load_dotenv
 import os
-from langchain.document_loaders import DirectoryLoader, TextLoader
+from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain.text_splitter import CharacterTextSplitter
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain.vectorstores.chroma import Chroma
 from langchain.chains import RetrievalQA
-from langchain.llms.openai import OpenAI
+from langchain_openai import OpenAI
 
 app = Flask(__name__)
 load_dotenv('.env')
@@ -21,9 +21,12 @@ def loadText():
 
     text_splitter = CharacterTextSplitter(chunk_size=2500, chunk_overlap=0)
     texts = text_splitter.split_documents(documents)
-    # print(texts)  
 
     vecstore = Chroma.from_documents(texts,embeddings)
+    return vecstore
+
+def retrievalQA():
+    vecstore = loadText()
     qa = RetrievalQA.from_chain_type(
         llm = OpenAI(),
         chain_type="stuff",
@@ -31,11 +34,11 @@ def loadText():
     )
     return qa
 
-qa = loadText()
+qa = retrievalQA()
 
 @app.route("/")
 def home():
-    return 'home'
+    return 'Home'
 
 @app.route("/webhook", methods=["GET"])
 def webhookGET():
@@ -69,11 +72,15 @@ def webhookPOST():
                 return 'EVENT_RECEIVED', 200
     else:
         return 'ERROR', 400
+    
+def handlePrompt(message):
+    text = message
+    res = qa.run(text)
+    return res
 
 def handleMessage(senderPsid, receivedMessage):
     if 'text' in receivedMessage:
-        text = receivedMessage['text']
-        res = qa.run(text)
+        res = handlePrompt(receivedMessage['text'])
         response = {
             "text": res
         }
