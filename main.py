@@ -16,7 +16,7 @@ load_dotenv('.env')
 def loadText():
     embeddings = OpenAIEmbeddings()
     # loader = TextLoader('news/Texto.txt')
-    loader = DirectoryLoader('news', glob="**/*.txt")
+    loader = DirectoryLoader('info', glob="**/*.txt")
     documents = loader.load()
 
     text_splitter = CharacterTextSplitter(chunk_size=2500, chunk_overlap=0)
