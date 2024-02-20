@@ -13,22 +13,29 @@ from langchain_openai import OpenAI
 app = Flask(__name__)
 load_dotenv('.env')
 
-def splitText():
+embeddings = OpenAIEmbeddings()
+
+def loadText():
     # loader = TextLoader('news/Texto.txt')
     loader = DirectoryLoader('info', glob="**/*.txt")
-    documents = loader.load()
-    print("documents")
-    print(documents)
+    text = loader.load()
+    print("text")
+    print(text)
+    return text
+
+def splitText():
+    text = loadText()
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    texts = text_splitter.split_documents(documents)
+    texts = text_splitter.split_documents(text)
     print("texts")
     print(texts)
     return texts
 
 def createVecstore():
-    embeddings = OpenAIEmbeddings()
     texts = splitText()
     vecstore = Chroma.from_documents(texts,embeddings)
+    print("vecstore")
+    print(vecstore)
     return vecstore
 
 def retrievalQA():
