@@ -75,7 +75,8 @@ def webhookPOST():
         entries = body['entry']
         for entry in entries:
             webhookEvent = entry['messaging'][0]
-            print(webhookEvent)
+            print("Message received:")
+            print(webhookEvent['message']['text'])
 
             senderPsid = webhookEvent['sender']['id']
             print('Sender PSID: {}',format(senderPsid))
@@ -86,11 +87,6 @@ def webhookPOST():
     else:
         return 'ERROR', 400
     
-def handlePrompt(message):
-    text = message
-    res = qa.run(text)
-    return res
-
 def handleMessage(senderPsid, receivedMessage):
     if 'text' in receivedMessage:
         res = handlePrompt(receivedMessage['text'])
@@ -103,6 +99,11 @@ def handleMessage(senderPsid, receivedMessage):
             "text": 'This chatbot only accepts text messages'
         }
         callSendAPI(senderPsid,response)
+
+def handlePrompt(message):
+    text = message
+    res = qa.run(text)
+    return res
 
 def callSendAPI(senderPsid,response):
     resquestBody = {
@@ -118,6 +119,7 @@ def callSendAPI(senderPsid,response):
     }
     url = 'https://graph.facebook.com/v18.0/me/messages?access_token={}'.format(os.getenv('PAGE_ACCESS_TOKEN'))
     r = requests.post(url, json=resquestBody, headers=headers)
+    print("request:")
     print(r.text)
 
 
